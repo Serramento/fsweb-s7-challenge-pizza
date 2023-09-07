@@ -1,60 +1,79 @@
-import React, {useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import './SiparisSayfası.css';
 import * as Yup from "yup";
+import axios from 'axios';
+
+const initialData= {
+    boyut: false,
+    kalınlık: "",
+    malzemeler: "",
+    not: "",
+    adet: ""
+}
+
+const initialErrors= {
+    boyut: "",
+    kalınlık: "",
+    malzemeler: "",
+    not: "",
+    adet: ""
+}
+
+const formSchema = Yup.object().shape({
+    boyut: Yup
+    .boolean()
+    .oneOf([true], "Birini seçmelisiniz.")
+    .required("Birini seçmelisiniz."),
+    kalınlık: Yup
+    .boolean()
+    .required("Birini seçmelisiniz."),
+    malzemeler: Yup
+    .boolean("En fazla 10 malzeme seçebilirsiniz.")
+})
+
+const url = "https://reqres.in/api/users";
+
+const fiyat = "85.50";
 
     const SiparişSayfası = (props) => {
-
-    const initialData= {
-        boyutlar: false
-    }
-
-    const initialErrors= {
-        boyutlar: ""
-    }
-
-    const formSchema = Yup.object().shape({
-        boyutlar: Yup
-        .boolean()
-        .oneOf([true], "Birini seçmelisiniz.")
-        .required("Birini seçmelisiniz.")
-    })
 
     const [formData, setFormData] = useState(initialData);
 
     const[errors, setErrors] = useState(initialErrors);
 
-    const [isChecked, setIsChecked] = useState(false);
-
-    const [value, setValue] = useState('');
+    const [isValid, setIsValid] = useState(false);
 
     const [count, setCount] = useState(1);
 
-    const [total, setTotal] = useState(0);
-
-
-    const fiyat = "85.50";
-
     const handleSubmit = (event) => {
         event.preventDefault();
-        if(isChecked){
-            setFormData(initialData)
-        }else{
-            setErrors(initialErrors)
+        if(isValid) {
+            axios.post(url, formData)
+            .then((response) => {
+                console.log(response);
+                setFormData(initialData);
+            })
+            .catch((error) => {
+                console.error(error);
+            })
+            }
         }
-    }
 
-    const handleCheck = (event) => {
-        const list = [...isChecked, event.target.checked];
-        setTotal(list.length*5);
-    }
+    useEffect(() => {
+        formSchema.isValid(formData)
+        .then((valid) => {
+            setIsValid(valid)
+        })
+    }, [formData]);
+    
 
     const handleChange1 = (event) => {
         const {name, type, value, checked} = event.target;
-        let result = (type === "checkbox") ? checked: value;
-        setIsChecked(!isChecked);
-        Yup.reach(formSchema)
-            .validate(result)
+        let valuex = (type === "checkbox" || "radio") ? checked: value;
+        setFormData({...formData, [name]: value})
+        Yup.reach(formSchema, name)
+            .validate(valuex)
             .then((success) => {
                 setErrors({...errors, [name] : ""})
             })
@@ -63,11 +82,6 @@ import * as Yup from "yup";
             })
     }
     
-
-    const handleChange2= event => {
-        setValue(event.target.value);
-    }
-
     const handleClick1 = event => {
         event.preventDefault();
         if(count>1){
@@ -94,6 +108,11 @@ import * as Yup from "yup";
         "Ananas",
         "Kabak"
     ];
+
+    function toplama() {
+        const result= (fiyat + formData.malzemeler.length *5) * formData.adet;
+        return result;
+    }
 
     const history= useHistory();
 
@@ -125,34 +144,38 @@ import * as Yup from "yup";
 
                 <div className='boyut'>
                 <input
-                type="checkbox" 
+                type="radio" 
                 name="boyut"
+                value= {formData.boyut}
                 onChange={handleChange1}/>
                 Küçük
                 </div>
 
                 <div className='boyut'>
                 <input
-                type="checkbox" 
+                type="radio" 
                 name="boyut"
-                value= {formData.boyutlar}
+                value= {formData.boyut}
                 onChange={handleChange1}/>
                 Orta
                 </div>
 
                 <div className='boyut'>
                 <input
-                type="checkbox" 
+                type="radio" 
                 name="boyut"
+                value= {formData.boyut}
                 onChange={handleChange1}/>
                 Büyük
                 </div>
+
+                <p>{errors.boyut}</p>
 
             </label>
 
             <label>
                 Hamur Seç *
-                <select className='hamur' value= {value} onChange={handleChange2} name="hamur">
+                <select className='hamur' value= {formData.kalınlık} onChange={handleChange1} name="kalınlık">
                     <option disabled={true} value="">
                         Hamur Kalınlığı
                     </option>
@@ -160,6 +183,9 @@ import * as Yup from "yup";
                     <option value="2">Normal</option>
                     <option value="3">Kalın</option>
                 </select>
+
+                <p>{errors.kalınlık}</p>
+
             </label>
             </div>
 
@@ -173,13 +199,15 @@ import * as Yup from "yup";
                 <div key= {index}>
                     <input 
                     type= "checkbox"
-                    value= {item}
+                    value= {formData.malzemeler}
                     onChange={handleChange1}
                      />
                     <span>{item}</span>
                  </div>
             ))}
             </div>
+
+            <p>{errors.malzemeler}</p>
                 
             </label>
             </div>
@@ -193,8 +221,8 @@ import * as Yup from "yup";
                 placeholder='Siparişine eklemek istediğin bir not var mı?'
                 type= "text"
                 name= "not"
-                value = {value}
-                onChange= {handleChange2}
+                value = {formData.not}
+                onChange= {handleChange1}
                 />
                 </div>
             </label>
@@ -205,16 +233,16 @@ import * as Yup from "yup";
 
             <div className='artıEksi'>
                 <button onClick= {handleClick1}>-</button>
-                <span> {count} </span>
+                <span value= {formData.adet} > {count} </span>
                 <button onClick= {handleClick2}>+</button>
             </div>
 
             <div className='toplam'>
                 <label>
                     Sipariş Toplamı
-                    <p>Seçimler {total + "₺"}</p>
-                    <p>Toplam {Number(fiyat) + Number(total) + "₺"}</p>
-                    <button onClick= {() => onayPage()}>SİPARİŞ VER</button>
+                    <p>Seçimler {formData.malzemeler.length*5}  ₺</p>
+                    <p>Toplam {toplama} ₺</p>
+                    <button disabled = {!isValid} onClick= {() => onayPage()}>SİPARİŞ VER</button>
                 </label>
             </div>
 
