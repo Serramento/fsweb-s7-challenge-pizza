@@ -7,7 +7,7 @@ import axios from 'axios';
 const initialData= {
     boyut: false,
     kalınlık: "",
-    malzemeler: "",
+    malzemeler: [],
     not: "",
     adet: ""
 }
@@ -34,7 +34,7 @@ const formSchema = Yup.object().shape({
 
 const url = "https://reqres.in/api/users";
 
-const fiyat = "85.50";
+const fiyat = 85.50;
 
     const SiparişSayfası = (props) => {
 
@@ -63,9 +63,26 @@ const fiyat = "85.50";
     useEffect(() => {
         formSchema.isValid(formData)
         .then((valid) => {
-            setIsValid(valid)
-        })
+            setIsValid(!valid);
+        });
     }, [formData]);
+
+    const handleChange = (e) => {
+        const { value, checked } = e.target;
+        const { malzemeler } = formData;
+          
+        console.log(`${value} is ${checked}`);
+
+        if (checked) {
+          setFormData({
+            malzemeler: [...malzemeler, value],
+          });
+        } else {
+          setFormData({
+            malzemeler: malzemeler.filter((e) => e !== value),
+          });
+        }
+      };
     
 
     const handleChange1 = (event) => {
@@ -108,11 +125,6 @@ const fiyat = "85.50";
         "Ananas",
         "Kabak"
     ];
-
-    function toplama() {
-        const result= (fiyat + formData.malzemeler.length *5) * formData.adet;
-        return result;
-    }
 
     const history= useHistory();
 
@@ -196,11 +208,11 @@ const fiyat = "85.50";
 
             <div className= 'malzemeler'>
             {ekMalzemeler.map((item, index) =>(
-                <div key= {index}>
+                <div className= 'malzemeler-items' key= {index}>
                     <input 
                     type= "checkbox"
                     value= {formData.malzemeler}
-                    onChange={handleChange1}
+                    onChange={handleChange}
                      />
                     <span>{item}</span>
                  </div>
@@ -241,7 +253,7 @@ const fiyat = "85.50";
                 <label>
                     Sipariş Toplamı
                     <p>Seçimler {formData.malzemeler.length*5}  ₺</p>
-                    <p>Toplam {toplama} ₺</p>
+                    <p>Toplam {fiyat*count + formData.malzemeler.length*5*count}  ₺</p>
                     <button disabled = {!isValid} onClick= {() => onayPage()}>SİPARİŞ VER</button>
                 </label>
             </div>
